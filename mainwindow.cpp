@@ -17,6 +17,12 @@ MainWindow::MainWindow(QWidget *parent)
     ui->expectedVoltageLabel->setText("Voltage: " + voltage);
     ui->expectedAmperageLabel->setText("Amperage: " + amperage);
 
+    QObject::connect(socket, &QTcpSocket::readyRead, [=] () {
+        qDebug("ready read!");
+        QByteArray dataArr = socket->readAll();
+        ui->commandsResponse->append(QTime::currentTime().toString() + ": " + dataArr);
+    });
+
     ui->powerButton->setEnabled(false);
     ui->commandInput->setReadOnly(true);
     ui->voltageInput->setReadOnly(true);
@@ -54,12 +60,6 @@ void MainWindow::connectToHostSlot() {
 void MainWindow::sendToHostSlot() {
     socket->write(ui->commandInput->text().toLocal8Bit() + "\n");
     ui->commandInput->setText("");
-}
-
-void MainWindow::readyReadSlot() {
-    qDebug("ready read!");
-    QByteArray dataArr = socket->readAll();
-    ui->commandsResponse->append(QTime::currentTime().toString() + ": " + dataArr);
 }
 
 void MainWindow::clearErr() {
