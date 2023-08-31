@@ -12,10 +12,6 @@ MainWindow::MainWindow(QWidget *parent)
     ui->history->append(QTime::currentTime().toString() + " :No connection");
     socket = new QTcpSocket(this);
 
-    //ui->editPort->setText(QString::number(port));
-    //ui->editPort->setReadOnly(true);
-    //portSet = true;
-
     ui->connButton->setEnabled(false);
 
     ui->expectedVoltageLabel->setText("Voltage: " + voltage);
@@ -46,10 +42,10 @@ void MainWindow::connectToHostSlot() {
     socket->connectToHost(host, port);
     if (socket->waitForConnected(1000))
         qDebug("Connected!");
-    //else {
-    //    qDebug("Error occured while connecting");
-    //    return;
-    //}
+    else {
+        qDebug("Error occured while connecting");
+        return;
+    }
     ui->history->append(QTime::currentTime().toString() + ": Connected");
 
     ui->powerButton->setEnabled(true);
