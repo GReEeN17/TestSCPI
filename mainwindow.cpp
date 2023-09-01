@@ -44,68 +44,28 @@ MainWindow::~MainWindow()
     delete ui;
 }
 
-void MainWindow::connectToHostSlot() {
-    socket->connectToHost(host, port);
-    if (socket->waitForConnected(1000))
-        qDebug("Connected!");
-    else {
-        qDebug("Error occured while connecting");
-        return;
-    }
-    ui->history->append(QTime::currentTime().toString() + ": Connected");
-
-    ui->powerButton->setEnabled(true);
-}
-
 void MainWindow::sendToHostSlot() {
     socket->write(ui->commandInput->text().toLocal8Bit() + "\n");
     ui->commandInput->setText("");
 }
 
-void MainWindow::clearErr() {
-    QString errTxt = ":SYST:ERR?\n";
-    socket->write(errTxt.toLocal8Bit());
+void MainWindow::on_connButton_clicked()
+{
+    socket->connectToHost(host, port);
+    if (socket->waitForConnected(1000)) {
+        ui->history->append(QTime::currentTime().toString() + ": Connected");
+        qDebug("Connected!");
+    } else {
+        ui->history->append(QTime::currentTime().toString() + ": Not connected");
+        qDebug("Error occured while connecting");
+        return;
+    }
+
+    ui->powerButton->setEnabled(true);
 }
 
-void MainWindow::setVol() {
-    voltage = ui->voltageInput->text();
-    QString cmd = ":SOUR2:VOLT " + voltage + "\n";
-    ui->expectedVoltageLabel->setText("Voltage: " + voltage);
-    socket->write(cmd.toLocal8Bit());
-    ui->voltageInput->setText("");
-}
-
-void MainWindow::setAmp() {
-    amperage = ui->amperageInput->text();
-    QString cmd = ":SOUR2:CURR " + amperage + "\n";
-    ui->expectedAmperageLabel->setText("Amperage: " + amperage);
-    socket->write(cmd.toLocal8Bit());
-    ui->amperageInput->setText("");
-}
-
-void MainWindow::checkErrSlot() {
-    clearErr();
-}
-
-void MainWindow::setHost() {
-    host = ui->editHost->text();
-    ui->history->append(QTime::currentTime().toString() + " host: " + host);
-    ui->setDefaulButton->setEnabled(true);
-    hostSet = true;
-    if (hostSet && portSet)
-        ui->connButton->setEnabled(true);
-}
-
-void MainWindow::setPort() {
-    port = ui->editPort->text().toInt();
-    ui->history->append(QTime::currentTime().toString() + " port: " + QString::number(port));
-    ui->setDefaulButton->setEnabled(true);
-    portSet = true;
-    if (hostSet && portSet)
-        ui->connButton->setEnabled(true);
-}
-
-void MainWindow::setDefault() {
+void MainWindow::on_setDefaulButton_clicked()
+{
     port = 1026;
     host = "172.16.131.170";
     ui->editHost->setText(host);
@@ -118,7 +78,19 @@ void MainWindow::setDefault() {
     ui->connButton->setEnabled(true);
 }
 
-void MainWindow::dialValChangedSlot() {
+void MainWindow::on_sendCommandButton_clicked()
+{
+    sendToHostSlot();
+}
+
+void MainWindow::on_checkErrorsButton_clicked()
+{
+    QString errTxt = ":SYST:ERR?\n";
+    socket->write(errTxt.toLocal8Bit());
+}
+
+void MainWindow::on_dial_valueChanged(int value)
+{
     qDebug() << "value: " << ui->dial->value();
     if (ui->amperageRadioButton->isChecked()) {
         ui->dial->setMinimum(minAmperage);
@@ -141,21 +113,8 @@ void MainWindow::dialValChangedSlot() {
     }
 }
 
-void MainWindow::getVol() {
-    QString cmd = ":SOUR2:VOLT?";
-    socket->write(cmd.toLocal8Bit());
-    QString response = socket->readAll();
-    ui->currentVoltageLabel->setText(response);
-}
-
-void MainWindow::getAmp() {
-    QString cmd = ":SOUR2:CURR?";
-    socket->write(cmd.toLocal8Bit());
-    QString response = socket->readAll();
-    ui->currentAmperageLabel->setText(response);
-}
-
-void MainWindow::power() {
+void MainWindow::on_powerButton_clicked()
+{
     if (ui->powerButton->text() == "TURN ON") {
         QString cmd = ":OUTP:STAT ON";
         socket->write(cmd.toLocal8Bit());
@@ -189,57 +148,43 @@ void MainWindow::power() {
     }
 }
 
-void MainWindow::on_connButton_clicked()
-{
-    connectToHostSlot();
-}
-
-void MainWindow::on_setDefaulButton_clicked()
-{
-    setDefault();
-}
-
-void MainWindow::on_sendCommandButton_clicked()
-{
-    sendToHostSlot();
-}
-
-void MainWindow::on_checkErrorsButton_clicked()
-{
-    checkErrSlot();
-}
-
-void MainWindow::on_dial_valueChanged(int value)
-{
-    dialValChangedSlot();
-}
-
-void MainWindow::on_powerButton_clicked()
-{
-    power();
-}
-
 
 void MainWindow::on_getAmperageButton_clicked()
 {
-    getAmp();
+    QString cmd = ":SOUR2:CURR?";
+    socket->write(cmd.toLocal8Bit());
+    QString response = socket->readAll();
+    ui->currentAmperageLabel->setText(response);
 }
 
 void MainWindow::on_getVoltageButton_clicked()
 {
-    getVol();
+    QString cmd = ":SOUR2:VOLT?";
+    socket->write(cmd.toLocal8Bit());
+    QString response = socket->readAll();
+    ui->currentVoltageLabel->setText(response);
 }
 
 
 void MainWindow::on_editHost_returnPressed()
 {
-    setHost();
+    host = ui->editHost->text();
+    ui->history->append(QTime::currentTime().toString() + " host: " + host);
+    ui->setDefaulButton->setEnabled(true);
+    hostSet = true;
+    if (hostSet && portSet)
+        ui->connButton->setEnabled(true);
 }
 
 
 void MainWindow::on_editPort_returnPressed()
 {
-    setPort();
+    port = ui->editPort->text().toInt();
+    ui->history->append(QTime::currentTime().toString() + " port: " + QString::number(port));
+    ui->setDefaulButton->setEnabled(true);
+    portSet = true;
+    if (hostSet && portSet)
+        ui->connButton->setEnabled(true);
 }
 
 
@@ -250,11 +195,19 @@ void MainWindow::on_commandInput_returnPressed()
 
 void MainWindow::on_voltageInput_returnPressed()
 {
-    setVol();
+    voltage = ui->voltageInput->text();
+    QString cmd = ":SOUR2:VOLT " + voltage + "\n";
+    ui->expectedVoltageLabel->setText("Voltage: " + voltage);
+    socket->write(cmd.toLocal8Bit());
+    ui->voltageInput->setText("");
 }
 
 void MainWindow::on_amperageInput_returnPressed()
 {
-    setAmp();
+    amperage = ui->amperageInput->text();
+    QString cmd = ":SOUR2:CURR " + amperage + "\n";
+    ui->expectedAmperageLabel->setText("Amperage: " + amperage);
+    socket->write(cmd.toLocal8Bit());
+    ui->amperageInput->setText("");
 }
 
